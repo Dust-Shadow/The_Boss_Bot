@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>THE BOSS BOT</title>
+    <style>
+      body {
+        font-family: "Helvetica Neue", Arial, sans-serif;
+        background: linear-gradient(135deg, #d4fc79, #96e6a1);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+      .chat-container {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        max-width: 600px;
+        width: 100%;
+        padding: 20px;
+        transition: transform 0.3s;
+      }
+      .chat-container:hover {
+        transform: scale(1.02);
+      }
+      .chat-container h1 {
+        text-align: center;
+        color: #2c3e50;
+        font-weight: 600;
+        margin-bottom: 20px;
+      }
+      .messages {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 10px;
+        height: 300px;
+        overflow-y: auto;
+        background: #f8f8f8;
+      }
+      .message {
+        margin: 10px 0;
+        display: flex;
+        align-items: flex-start;
+      }
+      .message img {
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        margin-right: 10px;
+      }
+      .message.user {
+        justify-content: flex-end;
+      }
+      .message.user div {
+        background: #28a745;
+        color: #fff;
+        border-radius: 20px;
+        padding: 10px 15px;
+        max-width: 60%;
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+      }
+      .message.bot div {
+        background: #f1f1f1;
+        color: #333;
+        border-radius: 20px;
+        padding: 10px 15px;
+        max-width: 60%;
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+      }
+      .input-container {
+        display: flex;
+        margin-top: 10px;
+      }
+      input {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 20px;
+        outline: none;
+        transition: border-color 0.3s;
+      }
+      input:focus {
+        border-color: #28a745;
+      }
+      button {
+        padding: 10px 15px;
+        background: #28a745;
+        color: #fff;
+        border: none;
+        border-radius: 20px;
+        margin-left: 10px;
+        cursor: pointer;
+        outline: none;
+        transition: background 0.3s;
+      }
+      button:hover {
+        background: #218838;
+      }
+      .options {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        gap: 10px;
+      }
+      .option {
+        background: #28a745;
+        color: #fff;
+        border-radius: 12px;
+        padding: 10px;
+        flex: 1;
+        text-align: center;
+        cursor: pointer;
+        font-size: 14px;
+        white-space: nowrap;
+        transition: background 0.3s;
+      }
+      .option:hover {
+        background: #218838;
+      }
+      #backButtonContainer {
+        display: none;
+        margin-top: 10px;
+      }
+      #backButtonContainer button {
+        background: #ff4757;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="chat-container">
+      <h1>THE BOSS BOT</h1>
+      <div id="options" class="options">
+        <div class="option" onclick="selectOption('Personal Growth')">
+          Personal Growth
+        </div>
+        <div class="option" onclick="selectOption('Career Development')">
+          Career Development
+        </div>
+        <div class="option" onclick="selectOption('Fitness and Health')">
+          Fitness and Health
+        </div>
+        <div class="option" onclick="selectOption('Relationships')">
+          Relationships
+        </div>
+        <div class="option" onclick="selectOption('Financial Stability')">
+          Financial Stability
+        </div>
+        <div class="option" onclick="selectOption('Mental Well-being')">
+          Mental Well-being
+        </div>
+      </div>
+
+      <div id="backButtonContainer">
+        <button onclick="goBack()">Back</button>
+      </div>
+
+      <div class="messages" id="messages"></div>
+
+      <div id="inputContainer" style="display: none">
+        <div class="input-container">
+          <input type="text" id="messageInput" placeholder="Enter message" />
+          <button onclick="sendMessage()">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function goBack() {
+        document.getElementById("options").style.display = "flex";
+        document.getElementById("inputContainer").style.display = "none";
+        document.getElementById("backButtonContainer").style.display = "none";
+      }
+
+      function selectOption(option) {
+        document.getElementById("options").style.display = "none";
+        document.getElementById("inputContainer").style.display = "flex";
+        document.getElementById("backButtonContainer").style.display = "block";
+        document.getElementById("messageInput").placeholder =
+          "Enter message for " + option;
+        window.selectedOption = option;
+      }
+
+      function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== "") {
+          const cookies = document.cookie.split(";");
+          for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === name + "=") {
+              cookieValue = decodeURIComponent(
+                cookie.substring(name.length + 1)
+              );
+              break;
+            }
+          }
+        }
+        return cookieValue;
+      }
+
+      const csrftoken = getCookie("csrftoken");
+
+      function sendMessage() {
+        const input = document.getElementById("messageInput");
+        const message = input.value;
+        if (message.trim() === "") return;
+
+        displayMessage(message, "user");
+        displayLoading();
+
+        fetch("/api/chat/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-CSRFToken": csrftoken,
+          },
+          body: new URLSearchParams({
+            message: message,
+            option: window.selectedOption,
+          }),
+        })
+          .then((response) => {
+            const csrfTokenFromResponse = response.headers.get("X-CSRFToken");
+            if (csrfTokenFromResponse) {
+              document.cookie = `csrftoken=${csrfTokenFromResponse}; path=/`;
+            }
+            return response.json();
+          })
+          .then((data) => {
+            removeLoading();
+            displayMessage(data.message, "bot");
+          })
+          .catch((error) => {
+            removeLoading();
+            console.error("Error:", error);
+          });
+
+        input.value = "";
+      }
+
+      function displayMessage(message, sender) {
+        const messagesContainer = document.getElementById("messages");
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `message ${sender}`;
+        const messageContent = document.createElement("div");
+        messageContent.innerText = message;
+
+        if (sender === "bot") {
+          const img = document.createElement("img");
+          img.src =
+            "https://2.bp.blogspot.com/-PRJ5zBck0DI/VyCp8HhleqI/AAAAAAAAC7U/GWcifLJIy-QLoWbsQaBjlXgywFiq2sImQCLcB/s1600/Emperor%2BMarcus%2BAurelius.jpg";
+          messageDiv.appendChild(img);
+        }
+
+        messageDiv.appendChild(messageContent);
+        messagesContainer.appendChild(messageDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+
+      function displayLoading() {
+        const messagesContainer = document.getElementById("messages");
+        const loadingDiv = document.createElement("div");
+        loadingDiv.className = "message bot loading";
+        const loadingImg = document.createElement("img");
+        loadingImg.src =
+          "https://2.bp.blogspot.com/-PRJ5zBck0DI/VyCp8HhleqI/AAAAAAAAC7U/GWcifLJIy-QLoWbsQaBjlXgywFiq2sImQCLcB/s1600/Emperor%2BMarcus%2BAurelius.jpg";
+        const loadingText = document.createElement("span");
+        loadingText.innerText = "Loading...";
+        loadingDiv.appendChild(loadingImg);
+        loadingDiv.appendChild(loadingText);
+        messagesContainer.appendChild(loadingDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+
+      function removeLoading() {
+        const messagesContainer = document.getElementById("messages");
+        const loadingDiv = document.querySelector(".loading");
+        if (loadingDiv) {
+          messagesContainer.removeChild(loadingDiv);
+        }
+      }
+    </script>
+  </body>
+</html>
